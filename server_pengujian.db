@@ -1,0 +1,92 @@
+# =====================================================================
+# SIMULASI BLOK KODE: INTEGRASI DATABASE RELASIONAL BACK-END
+# STUDI KASUS: PENYIMPANAN DATA SENSOR HASIL UJI KE DALAM SQLITE
+# =====================================================================
+
+import sqlite3
+import json # Digunakan untuk mensimulasikan parsing data HTTP POST
+
+if __name__ == "__main__":
+    print("==================================================")
+    print(" INISIALISASI SERVER BACK-END (DATABASE LOKAL)")
+    print("==================================================")
+
+    # 1. KONEKSI KE MESIN DATABASE (DBMS)
+    # Jika file tidak ada, SQLite akan otomatis menciptakannya.
+    print("[SISTEM] Membuka koneksi ke pangkalan data 'server_pengujian.db'...")
+    koneksi_db = sqlite3.connect("server_pengujian.db")
+    
+    # Cursor adalah instrumen penunjuk untuk mengeksekusi perintah SQL di dalam memori
+    kursor = koneksi_db.cursor()
+
+    # 2. DATA DEFINITION LANGUAGE (DDL)
+    # Membangun arsitektur Tabel penyimpan data jika belum pernah dibuat sebelumnya
+    perintah_buat_tabel = """
+    CREATE TABLE IF NOT EXISTS rekam_jejak_uji (
+        id_registrasi TEXT PRIMARY KEY,
+        berat_sumbu_kg REAL,
+        efisiensi_persen REAL,
+        status_akhir TEXT
+    )
+    """
+    kursor.execute(perintah_buat_tabel)
+    print("[SISTEM] Tabel 'rekam_jejak_uji' tervalidasi di dalam Database.")
+
+    # 3. SIMULASI PENERIMAAN DATA DARI ALAT UJI (CLIENT)
+    # Payload masuk disimulasikan sebagai string format JSON dari jaringan TCP/IP
+    payload_http_post_masuk = """
+    {
+        "id_registrasi": "REG-2026-X11A",
+        "berat_sumbu_kg": 3500.0,
+        "efisiensi_persen": 55.4,
+        "status_akhir": "LULUS"
+    }
+    """
+    
+    # Ekstraksi string JSON menjadi Dictionary Python
+    data_sensor = json.loads(payload_http_post_masuk)
+    print("\n[JARINGAN] Menerima transmisi HTTP POST dari Klien (Alat Uji Rem).")
+    
+    # 4. DATA MANIPULATION LANGUAGE (DML) - MENYUNTIKKAN DATA
+    # Menyisipkan data hasil ukur ke dalam kolom tabel secara sistematis
+    print("[DATABASE] Mengeksekusi Injeksi SQL INSERT...")
+    
+    try:
+        # Menggunakan metode Parameterized Query (?) untuk keamanan data
+        perintah_insert = """
+        INSERT INTO rekam_jejak_uji (id_registrasi, berat_sumbu_kg, efisiensi_persen, status_akhir)
+        VALUES (?, ?, ?, ?)
+        """
+        # Variabel argumen ditarik dari Dictionary data_sensor
+        nilai_input = (
+            data_sensor["id_registrasi"], 
+            data_sensor["berat_sumbu_kg"], 
+            data_sensor["efisiensi_persen"], 
+            data_sensor["status_akhir"]
+        )
+        
+        kursor.execute(perintah_insert, nilai_input)
+        
+        # WAJIB di-commit (disahkan) agar data tersimpan permanen ke Hard Disk
+        koneksi_db.commit()
+        print("   -> [SUKSES] Data fisis telah terekam ke dalam Basis Data.")
+        
+    except sqlite3.IntegrityError:
+        # Pengecualian ini terjadi jika id_registrasi (Primary Key) sudah ada di dalam tabel (Duplikat)
+        print("   -> [GAGAL] Integritas Data Ditolak: Kendaraan dengan ID tersebut sudah tercatat!")
+
+    # 5. VERIFIKASI PEMBACAAN DATA (QUERY SELECT)
+    print("\n[DATABASE] Menarik (SELECT) rekapitulasi data dari tabel untuk Dashboard...")
+    kursor.execute("SELECT * FROM rekam_jejak_uji")
+    semua_data = kursor.fetchall()
+    
+    print("--------------------------------------------------")
+    print("ISI PANGKALAN DATA (DATABASE):")
+    for baris in semua_data:
+        print(f"ID: {baris[0]} | Berat: {baris[1]} Kg | Efisiensi: {baris[2]}% | Status: {baris[3]}")
+    print("--------------------------------------------------")
+
+    # 6. PENUTUPAN KONEKSI (HOUSEKEEPING)
+    koneksi_db.close()
+    print("[SISTEM] Koneksi pangkalan data ditutup dengan aman.")
+    print("==================================================")

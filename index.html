@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Pengujian Kendaraan Terpadu</title>
+    <!-- CSS Internal untuk merapikan desain antarmuka tabel -->
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; }
+        h2 { text-align: center; color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background-color: #fff; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        th { background-color: #0056b3; color: white; }
+        .status-lulus { color: green; font-weight: bold; }
+        .status-gagal { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h2>DASHBOARD REKAPITULASI PENGUJIAN KENDARAAN (KIR)</h2>
+
+    <!-- Mendefinisikan Struktur Tabel Front-end -->
+    <table>
+        <thead>
+            <tr>
+                <th>ID Registrasi / Nomor Polisi</th>
+                <th>Berat Sumbu (Kg)</th>
+                <th>Efisiensi Rem (%)</th>
+                <th>Keputusan Akhir</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Mesin Jinja2 (Flask) mengeksekusi perulangan 'for' dari database -->
+            {% for baris in data_uji %}
+            <tr>
+                <!-- Mencetak setiap indeks tuple ke dalam kolom tabel (td) -->
+                <td>{{ baris[0] }}</td>
+                <td>{{ baris[1] }}</td>
+                <td>{{ baris[2] }}</td>
+                
+                <!-- Format logika kondisional (If-Else) di dalam HTML -->
+                {% if baris[3] == "LULUS" %}
+                    <td class="status-lulus">{{ baris[3] }}</td>
+                {% else %}
+                    <td class="status-gagal">{{ baris[3] }}</td>
+                {% endif %}
+            </tr>
+            {% else %}
+            <!-- Dieksekusi jika pangkalan data kosong -->
+            <tr>
+                <td colspan="4">Tidak ada data kendaraan yang terekam.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>
